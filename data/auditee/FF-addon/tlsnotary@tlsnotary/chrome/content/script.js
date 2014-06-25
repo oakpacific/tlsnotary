@@ -162,7 +162,7 @@ function responsePreparePMS(iteration){
     //before beginning the reload
     auditeeMacCheck();
 
-	help.value = "Waiting for the page to reload fully"
+    help.value = "Waiting for the page to reload fully (decrypted HTML will open in new tab)"
 	//don't reuse TLS sessions
 	var sdr = Cc["@mozilla.org/security/sdr;1"].getService(Ci.nsISecretDecoderRing);
 	sdr.logoutAndTeardown();
@@ -179,7 +179,7 @@ function responsePreparePMS(iteration){
 
 
 function makeSureReloadDoesntTakeForever(iteration) {
-	if (help.value == "Waiting for the page to reload fully") {
+    if (help.value == "Waiting for the page to reload fully (decrypted HTML will open in new tab)") {
 		if (iteration > 300){
 			help.value = "ERROR page reloading is taking too long. You may Stop loading this page and try again"
             return;
@@ -238,20 +238,23 @@ function responseAuditeeMacCheck(iteration){
         return;
     }
     //else: not a timeout but a response from my backend server
+    bAuditeeMacCheckResponded = true;
 
     //connections were reset so reload will fail;
-    //disable proxy and reload again
-    switchProxy(false);
+    //we should reset to not use the proxy.
+    //However, in isolated cases (twitter.com on Windows),
+    //it was found that switching off the proxy was not enough to always
+    //make the second reload work, hence we go totally offline and then online again.
+    switchOffline(true);
+    setTimeout(secondReload,500);
+}
 
-    bAuditeeMacCheckResponded = true;
-    help.value = "Decrypting HTML (will pop up in a new tab)"
-
+function secondReload(){
+    switchOffline(false);
     //open decrypted tab only after the new reload has finished
     //and the browser has been put into offline mode
     audited_browser.addProgressListener(loadListener);
-
     audited_browser.reloadWithFlags(Ci.nsIWebNavigation.LOAD_FLAGS_BYPASS_CACHE);
-
 }
 
 //get paths to decrypted html files on local filesystem and show the html
@@ -304,7 +307,6 @@ function responseGetHTMLPaths(iteration){
     for (var i=0; i<html_paths.length; i++){
         var browser = gBrowser.getBrowserForTab(gBrowser.addTab(html_paths[i]));
         if (i==html_paths.length-1){
-            //alert("got into the bit");
             browser.addProgressListener(loadListener2);
         }
     }
@@ -329,6 +331,7 @@ var loadListener = {
             // This fires when the page load finishes
             audited_browser.removeProgressListener(this);
             switchOffline(true);
+            help.value = "Decrypting HTML (will pop up in a new tab)"
             get_html_paths();
         }
     },
@@ -338,6 +341,9 @@ var loadListener = {
     onSecurityChange: function(aWebProgress, aRequest, aState) {}
 }
 
+//TODO: It should be possible to reuse the loadListener code
+//(e.g. something like loadListener2 = loadListener; loadListener2.onStateChange = ...)
+//but have not managed it yet.
 var loadListener2 = {
     QueryInterface: XPCOMUtils.generateQI(["nsIWebProgressListener",
                                            "nsISupportsWeakReference"]),

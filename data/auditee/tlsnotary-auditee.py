@@ -847,7 +847,7 @@ def new_sleep_proxy_connection_thread(socket_client, socket_stcppipe):
             #available then terminate this thread
             if int(time.time()) - last_time_data_was_seen_from_server < 3: continue
             #dont send databuf anywhere, the server responce is already in the trace
-            print ('*******************************************************************************Server responded')        
+            print ('sleep proxy: Server responded')
             shutdown_sockets([socket_client, socket_stcppipe])
             rv = get_html_paths()
             if not rv[0]=='success':
@@ -983,7 +983,6 @@ def sleep_proxy_thread(parenthread, FF_proxy_port, stcppipe_in_port):
    # while True: accept only 1 connection
     #block until a new connection appears
     new_socket, new_address = socket_proxy.accept()
-    print ('new connection  accepted')
     socket_stcppipe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socket_stcppipe.connect(('127.0.0.1', stcppipe_in_port))
     #process only one connection
@@ -1004,9 +1003,7 @@ def https_proxy_thread(parenthread, port):
     socket_proxy.listen(5) #5 requests can be queued
     auditee_mac_check = True
     #block until a new connection appears
-    print ('listening for a new connection')
     new_socket, new_address = socket_proxy.accept()
-    print ('new connection  accepted')
     #process only one connection
     thread = threading.Thread(target= new_connection_thread, args=(new_socket,))
     thread.daemon = True
