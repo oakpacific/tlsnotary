@@ -848,12 +848,19 @@ def new_sleep_proxy_connection_thread(socket_client, socket_stcppipe):
             if int(time.time()) - last_time_data_was_seen_from_server < 3: continue
             #dont send databuf anywhere, the server responce is already in the trace
             print ('sleep proxy: Server responded')
-            shutdown_sockets([socket_client, socket_stcppipe])
+            #shutdown_sockets([socket_client, socket_stcppipe])
             rv = get_html_paths()
             if not rv[0]=='success':
                 raise Exception('Decryption failed in sleep proxy')
             global auditee_mac_check
             auditee_mac_check = True
+            #This delay is to ensure the browser doesn't show
+            #a "Connection Reset" message.
+            #TODO we can to wait until the browser has performed the 'stop' action
+            #rather than use a hardcoded time; however this is not an urgent change since
+            #it is not a function of unreliable network latency.
+            time.sleep(1.5)
+            shutdown_sockets([socket_client, socket_stcppipe])
             return
         if len(xlist) > 0:
             print ('Socket exceptional condition. Terminating connection')
@@ -868,8 +875,10 @@ def new_sleep_proxy_connection_thread(socket_client, socket_stcppipe):
             try:
                 data = rsocket.recv( 1024*1024 )
                 if not data:  #socket closed
-                    shutdown_sockets([socket_client])
-                    return
+                    print ('got a no data in the socket')
+                    #shutdown_sockets([socket_client])
+                    #return
+                    continue
                 if rsocket is socket_client:
                     socket_stcppipe.send(data)
                     continue

@@ -240,17 +240,12 @@ function responseAuditeeMacCheck(iteration){
     //else: not a timeout but a response from my backend server
     bAuditeeMacCheckResponded = true;
 
-    //connections were reset so reload will fail;
-    //we should reset to not use the proxy.
-    //However, in isolated cases (twitter.com on Windows),
-    //it was found that switching off the proxy was not enough to always
-    //make the second reload work, hence we go totally offline and then online again.
-    switchOffline(true);
-    setTimeout(secondReload,500);
-}
+    //stop reload (equivalent to pressing red X)
+    audited_browser.stop();
 
-function secondReload(){
+    //go back to online (and disable the proxy)
     switchOffline(false);
+
     //open decrypted tab only after the new reload has finished
     //and the browser has been put into offline mode
     audited_browser.addProgressListener(loadListener);
@@ -376,15 +371,16 @@ function switchProxy(s){
 
 //if switch set to true, go offline, else go online
 function switchOffline(s){
+    //NB: FF ignores offline mode when proxy is set to manual
+    switchProxy(false);
     var ioService = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService2);
     if (!ioService.offline && s){
-        //NB: FF ignores offline mode when proxy is set to manual
-        switchProxy(false);
         BrowserOffline.toggleOfflineStatus();
     }
     else if (ioService.offline && !s){
         BrowserOffline.toggleOfflineStatus();
     }
+    //other 2 conditions, do nothing
 }
 
 function stopRecording(){
